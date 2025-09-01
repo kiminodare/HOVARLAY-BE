@@ -41,10 +41,7 @@ steps:
         docker pull kiminodare/backend-api-hovarlay:dev &&
         docker stop backend || true &&
         docker rm backend || true &&
-        docker run -d --name backend --restart always \
-        -p 9888:9888 \
-        --env-file /tmp/backend.env \
-        kiminodare/backend-api-hovarlay:dev &&
+        docker run -d --name backend --restart always -p 9888:9888 --env-file /tmp/backend.env kiminodare/backend-api-hovarlay:dev &&
         docker logs --tail 50 backend &&
         docker image prune -f &&
         rm /tmp/backend.env
