@@ -31,8 +31,9 @@ steps:
 
   # 3. Deploy to dev server
   - name: deploy-to-dev
-    image: alpine/ssh
+    image: alpine:latest
     commands:
+      - apk add --no-cache openssh-client bash
       - eval $(ssh-agent -s)
       - echo "$SSH_KEY_PASSPHRASE" | ssh-add <(echo "$SSH_KEY")
       - ssh -o StrictHostKeyChecking=no ubuntu@43.134.40.159 "
