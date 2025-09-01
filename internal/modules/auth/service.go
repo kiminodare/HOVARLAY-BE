@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"github.com/kiminodare/HOVARLAY-BE/ent/generated"
 	dtoAuth "github.com/kiminodare/HOVARLAY-BE/internal/modules/auth/dto"
 	"github.com/kiminodare/HOVARLAY-BE/internal/modules/user"
@@ -49,7 +48,7 @@ func (s *Service) Register(ctx context.Context, req *dtoUser.Request) (*generate
 	// Hash password dengan Argon2
 	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
-		return nil, errors.New("failed to hash password")
+		return nil, err
 	}
 
 	userReq := &dtoUser.Request{
@@ -58,9 +57,9 @@ func (s *Service) Register(ctx context.Context, req *dtoUser.Request) (*generate
 		Password: hashedPassword, // Password sudah di-hash
 	}
 
-	createdUser, err := s.userService.CreateUser(ctx, userReq)
+	createdUser, err := s.userService.Register(ctx, userReq)
 	if err != nil {
-		return nil, errors.New("failed to create user: " + err.Error())
+		return nil, err
 	}
 
 	return createdUser, nil

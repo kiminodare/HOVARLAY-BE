@@ -7,9 +7,6 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-var ErrInvalidCredentials = errors.New("invalid email or password")
-var ErrUserAlreadyExists = errors.New("user already exists")
-
 func FormatValidationErrors(err error) []string {
 	var messages []string
 	if err == nil {
