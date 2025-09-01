@@ -1,5 +1,6 @@
 # 🧾 WidaTech Technical Challenge - Backend (Golang Fiber)
 ![Go Version](https://img.shields.io/badge/go-1.24-blue)
+![Drone Build Status](https://drone-tencent.aldera.space/api/badges/kiminodare/HOVARLAY-BE/status.svg?branch=dev)
 
 Backend service for Hovarlay, built using [Golang Fiber](https://gofiber.io/), [Entgo](https://entgo.io/), and PostgreSQL.
 
