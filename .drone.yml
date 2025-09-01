@@ -1,0 +1,56 @@
+---
+kind: pipeline
+type: docker
+name: backend-dev-ci-cd
+
+trigger:
+  branch:
+    - dev
+  event:
+    - push
+
+steps:
+  # 1. Test
+  - name: test
+    image: golang:1.24
+    commands:
+      - go mod tidy
+
+  # 2. Build & push Docker image
+  - name: docker-build-publish
+    image: plugins/docker
+    settings:
+      repo: kiminodare/backend-api
+      tags:
+        - dev
+        - ${DRONE_COMMIT_SHA}
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+
+  # 3. Deploy to dev server
+  - name: deploy-to-dev
+    image: appleboy/drone-ssh
+    settings:
+      host: 43.134.40.159
+      username: ubuntu
+      key:
+        from_secret: ssh_key
+      script:
+        - echo "Deploying container with inline env..."
+        - docker pull kiminodare/backend-api:dev
+        - docker stop backend || true
+        - docker rm backend || true
+        # Jalankan container dengan env dari secret (hapus \r untuk aman)
+        - docker run -d \
+          --name backend \
+          --restart always \
+          $(echo "${BACKEND_ENV_HOVARLAY}" | tr -d '\r' | sed 's/^/-e /; s/\n/ -e /g') \
+          kiminodare/backend-api:dev
+        # Tampilkan log container selama 10 detik untuk debug
+        - docker logs --tail 50 backend
+        - docker image prune -f
+    environment:
+      BACKEND_ENV_HOVARLAY:
+        from_secret: BACKEND_ENV_HOVARLAY

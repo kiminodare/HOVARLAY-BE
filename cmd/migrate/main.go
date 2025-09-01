@@ -50,7 +50,7 @@ func main() {
 
 	// Migration options
 	var opts []schema.MigrateOption
-	if os.Getenv("APP_ENV") == "dev" {
+	if os.Getenv("APP_ENV") == "development" {
 		opts = append(opts,
 			schema.WithDropIndex(true),
 			schema.WithDropColumn(true),
