@@ -25,9 +25,9 @@ steps:
         - dev
         - ${DRONE_COMMIT_SHA}
       username:
-        from_secret: docker_username
+        from_secret: DOCKER_USERNAME
       password:
-        from_secret: docker_password
+        from_secret: DOCKER_PASSWORD
 
   # 3. Deploy to dev server
   - name: deploy-to-dev
@@ -37,14 +37,14 @@ steps:
       - eval $(ssh-agent -s)
       - echo "$SSH_KEY_PASSPHRASE" | ssh-add <(echo "$SSH_KEY")
       - ssh -o StrictHostKeyChecking=no ubuntu@43.134.40.159 "
+        echo \"$BACKEND_ENV_HOVARLAY\" | tr -d '\r' > /tmp/backend.env &&
         docker pull kiminodare/backend-api-hovarlay:dev &&
         docker stop backend || true &&
         docker rm backend || true &&
-        docker run -d --name backend --restart always \
-        $(echo \"$BACKEND_ENV_HOVARLAY\" | tr -d '\r' | sed 's/^/-e /; s/\\n/ -e /g') \
-        kiminodare/backend-api-hovarlay:dev &&
+        docker run -d --name backend --restart always --env-file /tmp/backend.env kiminodare/backend-api-hovarlay:dev &&
         docker logs --tail 50 backend &&
-        docker image prune -f
+        docker image prune -f &&
+        rm /tmp/backend.env
         "
     environment:
       BACKEND_ENV_HOVARLAY:
