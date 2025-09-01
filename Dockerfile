@@ -2,6 +2,7 @@
 FROM golang:1.24-alpine AS builder
 WORKDIR /app
 
+# Install git untuk go mod
 RUN apk add --no-cache git
 
 COPY go.mod go.sum ./
@@ -16,8 +17,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o migrate ./cmd/mig
 
 # Stage 2: Final
 FROM alpine:latest
-RUN apk --no-cache add ca-certificates tini
+RUN apk --no-cache add ca-certificates tini bash
 
+# Tambah user non-root
 RUN addgroup -S app && adduser -S app -G app
 USER app
 
@@ -31,4 +33,6 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget -qO- http://localhost:9888/health || exit 1
 
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["./server"]
+
+# Jalankan migrate dulu, baru server
+CMD ["sh", "-c", "./migrate && ./server"]
