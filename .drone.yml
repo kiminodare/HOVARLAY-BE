@@ -20,7 +20,7 @@ steps:
   - name: docker-build-publish
     image: plugins/docker
     settings:
-      repo: kiminodare/backend-api
+      repo: kiminodare/backend-api-hovarlay
       tags:
         - dev
         - ${DRONE_COMMIT_SHA}
@@ -36,10 +36,10 @@ steps:
       host: 43.134.40.159
       username: ubuntu
       key:
-        from_secret: ssh_key
+        from_secret: SSH_KEY
       script:
         - echo "Deploying container with inline env..."
-        - docker pull kiminodare/backend-api:dev
+        - docker pull kiminodare/backend-api-hovarlay:dev
         - docker stop backend || true
         - docker rm backend || true
         # Jalankan container dengan env dari secret (hapus \r untuk aman)
@@ -47,7 +47,7 @@ steps:
           --name backend \
           --restart always \
           $(echo "${BACKEND_ENV_HOVARLAY}" | tr -d '\r' | sed 's/^/-e /; s/\n/ -e /g') \
-          kiminodare/backend-api:dev
+          kiminodare/backend-api-hovarlay:dev
         # Tampilkan log container selama 10 detik untuk debug
         - docker logs --tail 50 backend
         - docker image prune -f
