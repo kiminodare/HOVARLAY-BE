@@ -23,43 +23,49 @@ func buildPostgresDSN(host, port, user, pass, name, ssl string) string {
 
 func main() {
 	// Load .env
-	_ = godotenv.Load()
+	if err := godotenv.Load(); err != nil {
+		log.Println("⚠️ No .env file found, using environment variables")
+	}
 
-	// From env
-	host := os.Getenv("DB_HOST")
-	port := os.Getenv("DB_PORT")
-	user := os.Getenv("DB_USER")
-	pass := os.Getenv("DB_PASSWORD")
-	name := os.Getenv("DB_NAME")
-	ssl := os.Getenv("DB_SSLMODE")
-
-	dsn := buildPostgresDSN(host, port, user, pass, name, ssl)
+	dsn := buildPostgresDSN(
+		os.Getenv("DB_HOST"),
+		os.Getenv("DB_PORT"),
+		os.Getenv("DB_USER"),
+		os.Getenv("DB_PASSWORD"),
+		os.Getenv("DB_NAME"),
+		os.Getenv("DB_SSLMODE"),
+	)
 
 	client, err := generated.Open(dialect.Postgres, dsn)
 	if err != nil {
 		log.Fatalf("❌ failed opening connection: %v", err)
 	}
-	defer func(client *generated.Client) {
-		err := client.Close()
-		if err != nil {
-			log.Fatalf("❌ failed closing connection: %v", err)
-		}
-	}(client)
+	defer client.Close()
 
 	ctx := context.Background()
 
-	// Migration options
 	var opts []schema.MigrateOption
-	if os.Getenv("APP_ENV") == "dev" {
+
+	appEnv := os.Getenv("APP_ENV")
+
+	switch appEnv {
+	case "local":
 		opts = append(opts,
-			schema.WithDropIndex(true),
 			schema.WithDropColumn(true),
+			schema.WithDropIndex(true),
+			schema.WithForeignKeys(true),
 		)
+	case "development", "production":
+		opts = append(opts,
+			schema.WithForeignKeys(true),
+		)
+	default:
+		log.Fatalf("❌ Unknown APP_ENV: %s", appEnv)
 	}
 
 	if err := client.Schema.Create(ctx, opts...); err != nil {
 		log.Fatalf("❌ migration failed: %v", err)
 	}
 
-	log.Println("✅ Migration successful")
+	log.Printf("✅ Migration successful for %s environment", appEnv)
 }

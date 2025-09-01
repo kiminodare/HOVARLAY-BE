@@ -29,5 +29,3 @@ vendor/
 # macOS
 .DS_Store
 
-# Generated files dari Ent
-ent/generated/
