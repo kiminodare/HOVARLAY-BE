@@ -2,14 +2,19 @@
 FROM golang:1.24-alpine AS builder
 WORKDIR /app
 
-# Install git untuk go mod
-RUN apk add --no-cache git && \
-    go mod download
+# Install git for go modules
+RUN apk add --no-cache git
 
+# Copy go mod files first
 COPY go.mod go.sum ./
+
+# Now we can safely run go mod download
+RUN go mod download
+
+# Copy source code
 COPY . .
 
-# Build server and migrate
+# Build binaries
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o server ./cmd/server && \
     CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o migrate ./cmd/migrate
 
@@ -32,5 +37,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 
 ENTRYPOINT ["/sbin/tini", "--"]
 
-# Jalankan migrate dulu, baru server
+# Run migrate first, then server
 CMD ["sh", "-c", "./migrate && ./server"]
