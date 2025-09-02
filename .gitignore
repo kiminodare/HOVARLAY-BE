@@ -21,11 +21,14 @@ vendor/
 
 # IDE / Editor files
 .vscode/
-.idea/
 *.swp
 *.swo
 *~
 
 # macOS
 .DS_Store
+
+# SonarQube
+.scannerwork/
+sonar-project.properties
 

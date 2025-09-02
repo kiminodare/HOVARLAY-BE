@@ -4,15 +4,18 @@ import (
 	"github.com/google/uuid"
 	"github.com/kiminodare/HOVARLAY-BE/ent/generated"
 	dtoUser "github.com/kiminodare/HOVARLAY-BE/internal/modules/user/dto"
+	"github.com/kiminodare/HOVARLAY-BE/internal/modules/user/interface"
 	"github.com/kiminodare/HOVARLAY-BE/internal/utils"
 	"golang.org/x/net/context"
 )
 
 type Service struct {
-	repo *Repository
+	repo _interface.RepositoryInterface
 }
 
-func NewUserService(repo *Repository) *Service {
+var _ _interface.ServiceInterface = (*Service)(nil)
+
+func NewUserService(repo _interface.RepositoryInterface) *Service {
 	return &Service{repo: repo}
 }
 

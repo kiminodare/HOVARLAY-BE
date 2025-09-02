@@ -3,24 +3,22 @@ FROM golang:1.24-alpine AS builder
 WORKDIR /app
 
 # Install git untuk go mod
-RUN apk add --no-cache git
+RUN apk add --no-cache git && \
+    go mod download
 
 COPY go.mod go.sum ./
-RUN go mod download
-
 COPY . .
 
-# Build server
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o server ./cmd/server
-# Build migrate
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o migrate ./cmd/migrate
+# Build server and migrate
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o server ./cmd/server && \
+    CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o migrate ./cmd/migrate
 
 # Stage 2: Final
-FROM alpine:latest
-RUN apk --no-cache add ca-certificates tini bash
+FROM alpine:3.22.1
+RUN apk --no-cache add bash ca-certificates tini && \
+    addgroup -S app && \
+    adduser -S app -G app
 
-# Tambah user non-root
-RUN addgroup -S app && adduser -S app -G app
 USER app
 
 WORKDIR /home/app

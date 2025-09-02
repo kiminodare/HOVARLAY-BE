@@ -4,6 +4,8 @@ import (
 	"context"
 	"github.com/kiminodare/HOVARLAY-BE/ent/generated/history"
 	user2 "github.com/kiminodare/HOVARLAY-BE/ent/generated/user"
+	historyInterface "github.com/kiminodare/HOVARLAY-BE/internal/modules/history/interface"
+	_ "github.com/kiminodare/HOVARLAY-BE/internal/modules/user/interface"
 
 	"github.com/google/uuid"
 	"github.com/kiminodare/HOVARLAY-BE/ent/generated"
@@ -12,6 +14,8 @@ import (
 type Repository struct {
 	client *generated.Client
 }
+
+var _ historyInterface.RepositoryInterface = (*Repository)(nil)
 
 func NewHistoryRepository(client *generated.Client) *Repository {
 	return &Repository{client: client}

@@ -4,13 +4,17 @@ import (
 	"context"
 	"github.com/google/uuid"
 	"github.com/kiminodare/HOVARLAY-BE/ent/generated"
+	historyInterface "github.com/kiminodare/HOVARLAY-BE/internal/modules/history/interface"
+	_ "github.com/kiminodare/HOVARLAY-BE/internal/modules/user/interface"
 )
 
 type Service struct {
-	repo *Repository
+	repo historyInterface.RepositoryInterface
 }
 
-func NewService(repo *Repository) *Service {
+var _ historyInterface.ServiceInterface = (*Service)(nil)
+
+func NewService(repo historyInterface.RepositoryInterface) *Service {
 	return &Service{repo: repo}
 }
 

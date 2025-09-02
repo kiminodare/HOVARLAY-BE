@@ -60,10 +60,14 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 
 	_, err := h.service.Register(c.Context(), &req)
 	if err != nil {
-		if errors.Is(err, utils.ErrEmailAlreadyExists) {
+		switch {
+		case errors.Is(err, utils.ErrEmailAlreadyExists):
 			return middleware.Error(c, "Email already registered", fiber.StatusConflict)
+		case errors.Is(err, utils.ErrInvalidData):
+			return middleware.Error(c, "Invalid data", fiber.StatusBadRequest)
+		default:
+			return middleware.Error(c, "Failed to register", fiber.StatusInternalServerError)
 		}
-		return middleware.Error(c, "Failed to register", fiber.StatusInternalServerError)
 	}
 
 	return middleware.Success(c, nil, "Registration successful", nil)

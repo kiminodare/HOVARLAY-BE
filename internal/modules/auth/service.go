@@ -4,18 +4,18 @@ import (
 	"context"
 	"github.com/kiminodare/HOVARLAY-BE/ent/generated"
 	dtoAuth "github.com/kiminodare/HOVARLAY-BE/internal/modules/auth/dto"
-	"github.com/kiminodare/HOVARLAY-BE/internal/modules/user"
 	dtoUser "github.com/kiminodare/HOVARLAY-BE/internal/modules/user/dto"
+	userInterface "github.com/kiminodare/HOVARLAY-BE/internal/modules/user/interface" // ✅ Import interface
 	"github.com/kiminodare/HOVARLAY-BE/internal/utils"
 	"os"
 )
 
 type Service struct {
-	userService *user.Service
+	userService userInterface.ServiceInterface // ✅ Interface, bukan *user.Service
 	jwtUtil     *utils.AESJWTUtil
 }
 
-func NewAuthService(userService *user.Service, jwtUtil *utils.AESJWTUtil) *Service {
+func NewAuthService(userService userInterface.ServiceInterface, jwtUtil *utils.AESJWTUtil) *Service {
 	return &Service{
 		userService: userService,
 		jwtUtil:     jwtUtil,
@@ -59,7 +59,7 @@ func (s *Service) Register(ctx context.Context, req *dtoUser.Request) (*generate
 
 	createdUser, err := s.userService.Register(ctx, userReq)
 	if err != nil {
-		return nil, err
+		return nil, utils.MapEntError(err)
 	}
 
 	return createdUser, nil

@@ -6,17 +6,24 @@ import (
 	"github.com/kiminodare/HOVARLAY-BE/ent/generated"
 	"github.com/kiminodare/HOVARLAY-BE/ent/generated/user"
 	dtoUser "github.com/kiminodare/HOVARLAY-BE/internal/modules/user/dto"
+	"github.com/kiminodare/HOVARLAY-BE/internal/modules/user/interface"
 )
 
 type Repository struct {
 	client *generated.Client
 }
 
+var _ _interface.RepositoryInterface = (*Repository)(nil)
+
 func NewUserRepository(client *generated.Client) *Repository {
 	return &Repository{client: client}
 }
 
 func (r *Repository) Create(ctx context.Context, userEntity *dtoUser.Request) (*generated.User, error) {
+	if err := userEntity.Validate(); err != nil {
+		return nil, err
+	}
+
 	return r.client.User.Create().
 		SetName(userEntity.Name).
 		SetEmail(userEntity.Email).

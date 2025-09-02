@@ -21,40 +21,52 @@ type AESJWTUtil struct {
 
 func NewAESJWTUtil(jwtSecret string, aesKey string) *AESJWTUtil {
 	key := []byte(aesKey)
-
-	validLengths := []int{16, 24, 32}
-	valid := false
-	for _, length := range validLengths {
-		if len(key) == length {
-			valid = true
-			break
-		}
-	}
-
-	if !valid {
-		if len(key) < 16 {
-			for len(key) < 16 {
-				key = append(key, 0)
-			}
-			key = key[:16]
-		} else if len(key) < 24 {
-			for len(key) < 24 {
-				key = append(key, 0)
-			}
-			key = key[:24]
-		} else if len(key) < 32 {
-			for len(key) < 32 {
-				key = append(key, 0)
-			}
-			key = key[:32]
-		} else {
-			key = key[:32]
-		}
-	}
+	key = validateAndPadKey(key)
 
 	return &AESJWTUtil{
 		jwtSecret: jwtSecret,
 		aesKey:    key,
+	}
+}
+
+func validateAndPadKey(key []byte) []byte {
+	validLengths := []int{16, 24, 32}
+	if isValidKeyLength(key, validLengths) {
+		return key
+	}
+
+	return padKeyToValidLength(key)
+}
+
+func isValidKeyLength(key []byte, validLengths []int) bool {
+	for _, length := range validLengths {
+		if len(key) == length {
+			return true
+		}
+	}
+	return false
+}
+
+func padKeyToValidLength(key []byte) []byte {
+	targetLength := getTargetLength(len(key))
+
+	for len(key) < targetLength {
+		key = append(key, 0)
+	}
+
+	return key[:targetLength]
+}
+
+func getTargetLength(currentLength int) int {
+	switch {
+	case currentLength < 16:
+		return 16
+	case currentLength < 24:
+		return 24
+	case currentLength < 32:
+		return 32
+	default:
+		return 32
 	}
 }
 
@@ -138,9 +150,19 @@ func (a *AESJWTUtil) GenerateToken(userID uuid.UUID, email string) (string, erro
 		return "", err
 	}
 
-	// Buat claims dengan data terenkripsi
+	// Buat dan return token
+	return a.createSignedToken(encryptedData)
+}
+
+func (a *AESJWTUtil) createSignedToken(encryptedData string) (string, error) {
+	claims := a.createClaims(encryptedData)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(a.jwtSecret))
+}
+
+func (a *AESJWTUtil) createClaims(encryptedData string) *EncryptedClaims {
 	expirationTime := time.Now().Add(24 * time.Hour)
-	claims := &EncryptedClaims{
+	return &EncryptedClaims{
 		EncryptedData: encryptedData,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
@@ -149,27 +171,22 @@ func (a *AESJWTUtil) GenerateToken(userID uuid.UUID, email string) (string, erro
 			Issuer:    "HOVARLAY-BE",
 		},
 	}
-
-	// Buat dan sign JWT
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString([]byte(a.jwtSecret))
-	if err != nil {
-		return "", err
-	}
-
-	return tokenString, nil
 }
 
 func (a *AESJWTUtil) VerifyToken(tokenString string) (*UserData, error) {
+	claims, err := a.parseToken(tokenString)
+	if err != nil {
+		return nil, err
+	}
+
+	// Decrypt and unmarshal data
+	return a.decryptAndUnmarshalUserData(claims.EncryptedData)
+}
+
+func (a *AESJWTUtil) parseToken(tokenString string) (*EncryptedClaims, error) {
 	claims := &EncryptedClaims{}
 
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(a.jwtSecret), nil
-	})
-
+	token, err := jwt.ParseWithClaims(tokenString, claims, a.getSigningKeyFunc())
 	if err != nil {
 		return nil, err
 	}
@@ -178,8 +195,21 @@ func (a *AESJWTUtil) VerifyToken(tokenString string) (*UserData, error) {
 		return nil, fmt.Errorf("invalid token")
 	}
 
+	return claims, nil
+}
+
+func (a *AESJWTUtil) getSigningKeyFunc() jwt.Keyfunc {
+	return func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(a.jwtSecret), nil
+	}
+}
+
+func (a *AESJWTUtil) decryptAndUnmarshalUserData(encryptedData string) (*UserData, error) {
 	// Decrypt data
-	decryptedData, err := a.decrypt(claims.EncryptedData)
+	decryptedData, err := a.decrypt(encryptedData)
 	if err != nil {
 		return nil, err
 	}

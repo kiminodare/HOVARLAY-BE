@@ -5,11 +5,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/kiminodare/HOVARLAY-BE/internal/middleware"
 	dtoHistory "github.com/kiminodare/HOVARLAY-BE/internal/modules/history/dto"
+	historyInterface "github.com/kiminodare/HOVARLAY-BE/internal/modules/history/interface"
 	"github.com/kiminodare/HOVARLAY-BE/internal/utils"
 )
 
 type Handler struct {
-	service *Service
+	service historyInterface.ServiceInterface
 }
 
 func NewHandler(service *Service) *Handler {
@@ -104,7 +105,7 @@ func (h *Handler) GetByUser(c *fiber.Ctx) error {
 func (h *Handler) GetByID(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
-		return middleware.Error(c, "Invalid ID format", fiber.StatusBadRequest)
+		return middleware.Error(c, utils.ErrInvalidIDFormat, fiber.StatusBadRequest)
 	}
 
 	history, err := h.service.GetByID(c.Context(), id)
@@ -118,7 +119,7 @@ func (h *Handler) GetByID(c *fiber.Ctx) error {
 func (h *Handler) Update(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
-		return middleware.Error(c, "Invalid ID format", fiber.StatusBadRequest)
+		return middleware.Error(c, "utils.ErrInvalidIDFormat", fiber.StatusBadRequest)
 	}
 
 	var req dtoHistory.UpdateHistoryRequest
@@ -141,7 +142,7 @@ func (h *Handler) Update(c *fiber.Ctx) error {
 func (h *Handler) Delete(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
-		return middleware.Error(c, "Invalid ID format", fiber.StatusBadRequest)
+		return middleware.Error(c, "utils.ErrInvalidIDFormat", fiber.StatusBadRequest)
 	}
 
 	err = h.service.Delete(c.Context(), id)
